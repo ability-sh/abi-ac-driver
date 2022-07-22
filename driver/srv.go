@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ability-sh/abi-ac/ac"
 	"github.com/ability-sh/abi-lib/dynamic"
+	"github.com/ability-sh/abi-lib/errors"
 	"github.com/ability-sh/abi-lib/json"
 	"github.com/ability-sh/abi-micro/micro"
 	"github.com/ability-sh/abi-micro/runtime"
@@ -185,7 +185,7 @@ func Run(executor Executor) error {
 
 func setErrorResponse(w http.ResponseWriter, err error) {
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
-	e, ok := err.(*ac.Error)
+	e, ok := err.(*errors.Error)
 	if ok {
 		b, _ := json.Marshal(e)
 		w.Write(b)
