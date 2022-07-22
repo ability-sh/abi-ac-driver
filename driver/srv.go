@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -202,6 +203,7 @@ func setDataResponse(w http.ResponseWriter, data interface{}) {
 }
 
 var clientKeys = []string{"X-Forwarded-For", "x-forwarded-for"}
+var reg_clientIp, _ = regexp.Compile(`[0-9\.\:]+`)
 
 func getClientIp(r *http.Request) string {
 
@@ -212,5 +214,5 @@ func getClientIp(r *http.Request) string {
 		}
 	}
 
-	return strings.Split(r.RemoteAddr, ":")[0]
+	return reg_clientIp.FindString(strings.Split(r.RemoteAddr, ":")[0])
 }
