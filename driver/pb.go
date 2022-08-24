@@ -1,8 +1,8 @@
 package driver
 
 import (
-	"github.com/ability-sh/abi-ac/ac"
 	"github.com/ability-sh/abi-lib/dynamic"
+	"github.com/ability-sh/abi-lib/errors"
 )
 
 type PBResult interface {
@@ -14,7 +14,7 @@ func GetResult(rs interface{}, err error) (interface{}, error) {
 	if err == nil {
 		e, ok := rs.(PBResult)
 		if ok && e.GetErrno() != 200 {
-			return nil, ac.Errorf(int(e.GetErrno()), "%s", e.GetErrmsg())
+			return nil, errors.Errorf(int(e.GetErrno()), "%s", e.GetErrmsg())
 		}
 	}
 	return rs, err
