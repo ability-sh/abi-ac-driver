@@ -14,7 +14,7 @@ func GetResult(rs interface{}, err error) (interface{}, error) {
 	if err == nil {
 		e, ok := rs.(PBResult)
 		if ok && e.GetErrno() != 200 {
-			return nil, errors.Errorf(int(e.GetErrno()), "%s", e.GetErrmsg())
+			return nil, errors.Errorf(e.GetErrno(), "%s", e.GetErrmsg())
 		}
 	}
 	return rs, err
