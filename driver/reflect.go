@@ -5,8 +5,8 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/ability-sh/abi-ac/ac"
 	"github.com/ability-sh/abi-lib/dynamic"
+	"github.com/ability-sh/abi-lib/errors"
 	"github.com/ability-sh/abi-micro/micro"
 )
 
@@ -110,9 +110,9 @@ func (r *reflectExecutor) Exec(ctx micro.Context, name string, data interface{})
 			}
 		}
 
-		return nil, ac.Errorf(404, "Not Return %s", name)
+		return nil, errors.Errorf(404, "Not Return %s", name)
 
 	} else {
-		return nil, ac.Errorf(404, "Not Found %s", name)
+		return nil, errors.Errorf(404, "Not Found %s", name)
 	}
 }
