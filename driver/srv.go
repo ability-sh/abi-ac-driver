@@ -101,6 +101,8 @@ func Run(executor Executor) error {
 				return true
 			})
 
+			sessionKey := dynamic.StringValue(dynamic.Get(info, "sessionKey"), "abi-ac")
+
 			ctx, err := p.NewContext(name, trace)
 
 			if err != nil {
@@ -111,10 +113,13 @@ func Run(executor Executor) error {
 			defer ctx.Recycle()
 
 			clientIp := getClientIp(r)
+			sessionId := getSessionId(r, w, sessionKey)
 
 			ctx.SetValue("clientIp", clientIp)
+			ctx.SetValue("sessionId", sessionId)
 
 			ctx.AddTag("clientIp", clientIp)
+			ctx.AddTag("sessionId", sessionId)
 
 			var inputData interface{} = nil
 			ctype := r.Header.Get("Content-Type")
@@ -215,4 +220,24 @@ func getClientIp(r *http.Request) string {
 	}
 
 	return reg_clientIp.FindString(strings.Split(r.RemoteAddr, ":")[0])
+}
+
+func getSessionId(r *http.Request, w http.ResponseWriter, sessionKey string) string {
+
+	c, _ := r.Cookie(sessionKey)
+
+	if c == nil {
+		sessionId := micro.NewTrace()
+		cookie := http.Cookie{
+			Name:     sessionKey,
+			Value:    sessionId,
+			HttpOnly: true,
+			Path:     "/",
+		}
+		http.SetCookie(w, &cookie)
+		return sessionId
+	} else {
+		return c.Value
+	}
+
 }
