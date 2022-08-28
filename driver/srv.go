@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -97,7 +98,21 @@ func Run(executor Executor) error {
 			}
 
 			dynamic.Each(dynamic.Get(info, "cors"), func(key interface{}, value interface{}) bool {
-				w.Header().Add(dynamic.StringValue(key, ""), dynamic.StringValue(value, ""))
+				k := dynamic.StringValue(key, "")
+				v := dynamic.StringValue(value, "")
+				if k == "Access-Control-Allow-Origin" && v == "*" {
+					referer := r.Header.Get("Referer")
+					if referer == "" {
+						referer = r.Header.Get("referer")
+					}
+					if referer != "" {
+						u, _ := url.Parse(referer)
+						if u != nil {
+							v = u.Host
+						}
+					}
+				}
+				w.Header().Add(k, v)
 				return true
 			})
 
