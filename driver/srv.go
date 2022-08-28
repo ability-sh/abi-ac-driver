@@ -108,7 +108,7 @@ func Run(executor Executor) error {
 					if referer != "" {
 						u, _ := url.Parse(referer)
 						if u != nil {
-							v = u.Host
+							v = u.Scheme + "://" + u.Host
 						}
 					}
 				}
