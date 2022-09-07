@@ -175,6 +175,8 @@ func Run(executor Executor) error {
 
 			}
 
+			ctx.Step("input")("%+v", inputData)
+
 			rs, err := executor.Exec(ctx, name, inputData)
 
 			if err != nil {
