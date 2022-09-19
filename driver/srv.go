@@ -37,7 +37,7 @@ func Run(executor Executor) error {
 	if AC_LOG_FILE != "" {
 		fd, err := os.OpenFile(AC_LOG_FILE, os.O_APPEND, os.ModeAppend)
 		if err != nil {
-			fd, err := os.Create(AC_LOG_FILE)
+			fd, err = os.Create(AC_LOG_FILE)
 		}
 		if err != nil {
 			log.Panicln(err)
