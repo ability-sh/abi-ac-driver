@@ -27,10 +27,23 @@ func Run(executor Executor) error {
 	AC_ENV := os.Getenv("AC_ENV")
 	AC_ADDR := os.Getenv("AC_ADDR")
 	AC_CONFIG := os.Getenv("AC_CONFIG")
+	AC_LOG_FILE := os.Getenv("AC_LOG_FILE")
 	AC_HTTP_BODY_SIZE, _ := strconv.ParseInt(os.Getenv("AC_HTTP_BODY_SIZE"), 10, 64)
 
 	if AC_HTTP_BODY_SIZE == 0 {
 		AC_HTTP_BODY_SIZE = 1024 * 1024 * 500
+	}
+
+	if AC_LOG_FILE != "" {
+		fd, err := os.OpenFile(AC_LOG_FILE, os.O_APPEND, os.ModeAppend)
+		if err != nil {
+			fd, err := os.Create(AC_LOG_FILE)
+		}
+		if err != nil {
+			log.Panicln(err)
+		}
+		os.Stdout = fd
+		os.Stderr = fd
 	}
 
 	var config interface{} = nil
