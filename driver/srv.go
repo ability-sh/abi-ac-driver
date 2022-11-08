@@ -78,7 +78,15 @@ func Run(executor Executor) error {
 
 	info, _ := GetAppInfo()
 
-	alias := dynamic.StringValue(dynamic.Get(config, "alias"), "/")
+	getConfigValue := func(key string) interface{} {
+		v := dynamic.Get(config, key)
+		if v == nil {
+			v = dynamic.Get(info, key)
+		}
+		return v
+	}
+
+	alias := dynamic.StringValue(getConfigValue("alias"), "/")
 
 	if !strings.HasSuffix(alias, "/") {
 		alias = alias + "/"
@@ -110,7 +118,7 @@ func Run(executor Executor) error {
 				w.Header().Add("Trace", trace)
 			}
 
-			dynamic.Each(dynamic.Get(info, "cors"), func(key interface{}, value interface{}) bool {
+			dynamic.Each(getConfigValue("cors"), func(key interface{}, value interface{}) bool {
 				k := dynamic.StringValue(key, "")
 				v := dynamic.StringValue(value, "")
 				if k == "Access-Control-Allow-Origin" && v == "*" {
@@ -129,7 +137,7 @@ func Run(executor Executor) error {
 				return true
 			})
 
-			sessionKey := dynamic.StringValue(dynamic.Get(info, "sessionKey"), "abi-ac")
+			sessionKey := dynamic.StringValue(getConfigValue("sessionKey"), "abi-ac")
 
 			ctx, err := p.NewContext(name, trace)
 
