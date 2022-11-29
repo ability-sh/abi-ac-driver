@@ -139,6 +139,11 @@ func Run(executor Executor) error {
 
 			sessionKey := dynamic.StringValue(getConfigValue("sessionKey"), "abi-ac")
 
+			if r.Method == "OPTIONS" || r.Method == "HEAD" {
+				w.Write([]byte{})
+				return
+			}
+
 			ctx, err := p.NewContext(name, trace)
 
 			if err != nil {
