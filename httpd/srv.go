@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ability-sh/abi-ac-driver/driver"
 	"github.com/ability-sh/abi-lib/dynamic"
 	"github.com/ability-sh/abi-lib/errors"
 	"github.com/ability-sh/abi-lib/json"
 	"github.com/ability-sh/abi-micro/micro"
 	"github.com/ability-sh/abi-micro/runtime"
-	unit "unit.nginx.org/go"
 )
 
-func Run(executor Executor) error {
+func Run(executor driver.Executor) error {
 
 	AC_APPID := os.Getenv("AC_APPID")
 	AC_VER := os.Getenv("AC_VER")
@@ -26,7 +26,6 @@ func Run(executor Executor) error {
 
 	AC_ENV := os.Getenv("AC_ENV")
 	AC_ADDR := os.Getenv("AC_ADDR")
-	AC_CONFIG := os.Getenv("AC_CONFIG")
 	AC_LOG_FILE := os.Getenv("AC_LOG_FILE")
 	AC_HTTP_BODY_SIZE, _ := strconv.ParseInt(os.Getenv("AC_HTTP_BODY_SIZE"), 10, 64)
 
@@ -49,21 +48,10 @@ func Run(executor Executor) error {
 	var config interface{} = nil
 	var err error = nil
 
-	if AC_ENV == "unit" {
+	config, err = driver.GetConfig("./config.yaml")
 
-		err = json.Unmarshal([]byte(AC_CONFIG), &config)
-
-		if err != nil {
-			return err
-		}
-
-	} else {
-
-		config, err = GetConfig("./config.yaml")
-
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	p := runtime.NewPayload()
@@ -76,7 +64,7 @@ func Run(executor Executor) error {
 
 	defer p.Exit()
 
-	info, _ := GetAppInfo()
+	info, _ := driver.GetAppInfo()
 
 	getConfigValue := func(key string) interface{} {
 		v := dynamic.Get(config, key)
@@ -223,12 +211,8 @@ func Run(executor Executor) error {
 		AC_ADDR = ":8084"
 	}
 
-	if AC_ENV == "unit" {
-		return unit.ListenAndServe(AC_ADDR, nil)
-	} else {
-		log.Println("HTTPD", AC_ADDR)
-		return http.ListenAndServe(AC_ADDR, nil)
-	}
+	log.Println("HTTPD", AC_ADDR)
+	return http.ListenAndServe(AC_ADDR, nil)
 
 }
 
