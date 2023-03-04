@@ -6,7 +6,7 @@ require (
 	github.com/ability-sh/abi-lib v1.0.11
 	github.com/ability-sh/abi-micro v1.0.15
 	gopkg.in/yaml.v2 v2.4.0
-	unit.nginx.org/go v0.0.0-20230227234504-39bd904f1b63
+	unit.nginx.org/go v0.0.0-20230228184218-94d3a5e72aaa
 )
 
 require (
