@@ -18,7 +18,7 @@ type reflectExecutor struct {
 var contextType = reflect.TypeOf((*micro.Context)(nil)).Elem()
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
 
-func getName(name string, b *bytes.Buffer) string {
+func GetName(name string, b *bytes.Buffer) string {
 	b.Reset()
 	for i, r := range name {
 		if r >= 'A' && r <= 'Z' {
@@ -35,6 +35,10 @@ func getName(name string, b *bytes.Buffer) string {
 }
 
 func NewReflectExecutor(s interface{}) Executor {
+	return NewReflectExecutorWithGetName(s, GetName)
+}
+
+func NewReflectExecutorWithGetName(s interface{}, getName func(name string, b *bytes.Buffer) string) Executor {
 	rs := &reflectExecutor{s: s, exec: map[string]reflect.Value{}}
 
 	v := reflect.ValueOf(s)
