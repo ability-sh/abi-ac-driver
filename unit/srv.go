@@ -122,15 +122,34 @@ func Run(executor driver.Executor) error {
 			dynamic.Each(getConfigValue("cors"), func(key interface{}, value interface{}) bool {
 				k := dynamic.StringValue(key, "")
 				v := dynamic.StringValue(value, "")
-				if k == "Access-Control-Allow-Origin" && v == "*" {
-					referer := r.Header.Get("Referer")
-					if referer == "" {
-						referer = r.Header.Get("referer")
-					}
-					if referer != "" {
-						u, _ := url.Parse(referer)
-						if u != nil {
-							v = u.Scheme + "://" + u.Host
+				if k == "Access-Control-Allow-Origin" {
+					if v == "*" {
+						referer := r.Header.Get("Referer")
+						if referer == "" {
+							referer = r.Header.Get("referer")
+						}
+						if referer != "" {
+							u, _ := url.Parse(referer)
+							if u != nil {
+								v = u.Scheme + "://" + u.Host
+							}
+						}
+					} else {
+						referer := r.Header.Get("Referer")
+						if referer == "" {
+							referer = r.Header.Get("referer")
+						}
+						if referer != "" {
+							u, _ := url.Parse(referer)
+							if u != nil {
+								s := u.Scheme + "://" + u.Host
+								for _, ss := range strings.Split(v, ",") {
+									if s == ss {
+										v = s
+										break
+									}
+								}
+							}
 						}
 					}
 				}
