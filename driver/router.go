@@ -11,8 +11,8 @@ import (
 )
 
 type routerItem struct {
-	Match    func(name string) (string, bool)
-	Executor Executor
+	Match func(name string) (string, bool)
+	Exec  func(ctx micro.Context, name string, data interface{}) (interface{}, error)
 }
 
 type Router struct {
@@ -23,12 +23,14 @@ func NewRouter() *Router {
 	return &Router{}
 }
 
-func (R *Router) Add(match func(name string) (string, bool), executor Executor) *Router {
-	R.items = append(R.items, &routerItem{Match: match, Executor: executor})
+func (R *Router) Add(match func(name string) (string, bool), executor micro.Executor) *Router {
+	R.items = append(R.items, &routerItem{Match: match, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
+		return executor.Exec(ctx, name, data)
+	}})
 	return R
 }
 
-func (R *Router) Rewrite(pattern *regexp.Regexp, to string, executor Executor) *Router {
+func (R *Router) Rewrite(pattern *regexp.Regexp, to string, executor micro.Executor) *Router {
 	R.items = append(R.items, &routerItem{Match: func(name string) (string, bool) {
 		vs := pattern.FindStringSubmatch(name)
 		n := len(vs)
@@ -43,28 +45,51 @@ func (R *Router) Rewrite(pattern *regexp.Regexp, to string, executor Executor) *
 			return dst, true
 		}
 		return "", false
-	}, Executor: executor})
+	}, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
+		return executor.Exec(ctx, name, data)
+	}})
 	return R
 }
 
-func (R *Router) Use(pattern *regexp.Regexp, executor Executor) *Router {
+func (R *Router) Use(pattern *regexp.Regexp, executor micro.Executor) *Router {
 	R.items = append(R.items, &routerItem{Match: func(name string) (string, bool) {
 		if pattern.MatchString(name) {
 			return name, true
 		}
 		return "", false
-	}, Executor: executor})
+	}, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
+		return executor.Exec(ctx, name, data)
+	}})
 	return R
 }
 
-func (R *Router) Alias(alias string, executor Executor) *Router {
+func (R *Router) Alias(alias string, executor micro.Executor) *Router {
 	n := len(alias)
 	R.items = append(R.items, &routerItem{Match: func(name string) (string, bool) {
 		if strings.HasPrefix(name, alias) {
 			return name[n:], true
 		}
 		return "", false
-	}, Executor: executor})
+	}, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
+		return executor.Exec(ctx, name, data)
+	}})
+	return R
+}
+
+func (R *Router) Service(alias string, serviceName string) *Router {
+	n := len(alias)
+	R.items = append(R.items, &routerItem{Match: func(name string) (string, bool) {
+		if strings.HasPrefix(name, alias) {
+			return name[n:], true
+		}
+		return "", false
+	}, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
+		e, err := ctx.Runtime().GetExecutor(serviceName)
+		if err != nil {
+			return nil, err
+		}
+		return e.Exec(ctx, name, data)
+	}})
 	return R
 }
 
@@ -72,7 +97,7 @@ func (R *Router) Exec(ctx micro.Context, name string, data interface{}) (interfa
 	for _, item := range R.items {
 		dst, ok := item.Match(name)
 		if ok {
-			return item.Executor.Exec(ctx, dst, data)
+			return item.Exec(ctx, dst, data)
 		}
 	}
 	return nil, errors.Errorf(404, "not found")

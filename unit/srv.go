@@ -19,7 +19,7 @@ import (
 	unit "unit.nginx.org/go"
 )
 
-func Run(executor driver.Executor) error {
+func Run(executor micro.Executor) error {
 
 	AC_APPID := os.Getenv("AC_APPID")
 	AC_VER := os.Getenv("AC_VER")
