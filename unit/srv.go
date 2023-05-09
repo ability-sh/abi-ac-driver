@@ -96,11 +96,39 @@ func Run(executor micro.Executor) error {
 	alias_n := len(alias)
 
 	s_state := alias + "__stat"
+	s_scheme := alias + "__scheme"
 
 	http.HandleFunc(alias, func(w http.ResponseWriter, r *http.Request) {
 
 		if r.URL.Path == s_state {
 			setDataResponse(w, map[string]interface{}{"appid": AC_APPID, "ver": AC_VER, "ability": AC_ABILITY, "env": AC_ENV})
+			return
+		}
+
+		if r.URL.Path == s_scheme {
+
+			trace := r.Header.Get("Trace")
+
+			if trace == "" {
+				r.Header.Get("trace")
+			}
+
+			if trace == "" {
+				trace = micro.NewTrace()
+				w.Header().Add("Trace", trace)
+			}
+
+			ctx, err := p.NewContext("__scheme", trace)
+
+			if err != nil {
+				setErrorResponse(w, err)
+				return
+			}
+
+			defer ctx.Recycle()
+
+			setDataResponse(w, executor.Scheme(ctx))
+
 			return
 		}
 

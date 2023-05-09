@@ -93,7 +93,29 @@ func Run(executor micro.Executor) error {
 		}
 
 		if r.URL.Path == s_scheme {
-			setDataResponse(w, executor.Scheme())
+
+			trace := r.Header.Get("Trace")
+
+			if trace == "" {
+				r.Header.Get("trace")
+			}
+
+			if trace == "" {
+				trace = micro.NewTrace()
+				w.Header().Add("Trace", trace)
+			}
+
+			ctx, err := p.NewContext("__scheme", trace)
+
+			if err != nil {
+				setErrorResponse(w, err)
+				return
+			}
+
+			defer ctx.Recycle()
+
+			setDataResponse(w, executor.Scheme(ctx))
+
 			return
 		}
 

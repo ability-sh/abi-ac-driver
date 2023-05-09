@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -10,23 +11,37 @@ import (
 	"github.com/ability-sh/abi-micro/micro"
 )
 
+type RouteSchemeItem struct {
+	Alias     string                            `json:"alias"`
+	Title     string                            `json:"title"`
+	Scheme    micro.IScheme                     `json:"scheme"`
+	GetScheme func(micro.Context) micro.IScheme `json:"-"`
+}
+
+type RouteScheme struct {
+	Items []*RouteSchemeItem `json:"items"`
+}
+
 type routerItem struct {
 	Match func(name string) (string, bool)
 	Exec  func(ctx micro.Context, name string, data interface{}) (interface{}, error)
 }
 
 type Router struct {
-	items []*routerItem
+	items  []*routerItem
+	scheme *RouteScheme
 }
 
 func NewRouter() *Router {
-	return &Router{}
+	return &Router{scheme: &RouteScheme{}}
 }
 
 func (R *Router) Add(match func(name string) (string, bool), executor micro.Executor) *Router {
 	R.items = append(R.items, &routerItem{Match: match, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
 		return executor.Exec(ctx, name, data)
 	}})
+	R.scheme.Items = append(R.scheme.Items, &RouteSchemeItem{Alias: "",
+		GetScheme: func(ctx micro.Context) micro.IScheme { return executor.Scheme(ctx) }})
 	return R
 }
 
@@ -48,6 +63,8 @@ func (R *Router) Rewrite(pattern *regexp.Regexp, to string, executor micro.Execu
 	}, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
 		return executor.Exec(ctx, name, data)
 	}})
+	R.scheme.Items = append(R.scheme.Items, &RouteSchemeItem{Alias: "", Title: fmt.Sprintf("rewrite %s %s", pattern.String(), to),
+		GetScheme: func(ctx micro.Context) micro.IScheme { return executor.Scheme(ctx) }})
 	return R
 }
 
@@ -60,6 +77,8 @@ func (R *Router) Use(pattern *regexp.Regexp, executor micro.Executor) *Router {
 	}, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
 		return executor.Exec(ctx, name, data)
 	}})
+	R.scheme.Items = append(R.scheme.Items, &RouteSchemeItem{Alias: "", Title: fmt.Sprintf("regex %s", pattern.String()),
+		GetScheme: func(ctx micro.Context) micro.IScheme { return executor.Scheme(ctx) }})
 	return R
 }
 
@@ -73,6 +92,8 @@ func (R *Router) Alias(alias string, executor micro.Executor) *Router {
 	}, Exec: func(ctx micro.Context, name string, data interface{}) (interface{}, error) {
 		return executor.Exec(ctx, name, data)
 	}})
+	R.scheme.Items = append(R.scheme.Items, &RouteSchemeItem{Alias: alias,
+		GetScheme: func(ctx micro.Context) micro.IScheme { return executor.Scheme(ctx) }})
 	return R
 }
 
@@ -90,6 +111,13 @@ func (R *Router) Service(alias string, serviceName string) *Router {
 		}
 		return e.Exec(ctx, name, data)
 	}})
+	R.scheme.Items = append(R.scheme.Items, &RouteSchemeItem{Alias: alias, GetScheme: func(ctx micro.Context) micro.IScheme {
+		e, err := ctx.Runtime().GetExecutor(serviceName)
+		if err != nil {
+			return nil
+		}
+		return e.Scheme(ctx)
+	}})
 	return R
 }
 
@@ -101,4 +129,13 @@ func (R *Router) Exec(ctx micro.Context, name string, data interface{}) (interfa
 		}
 	}
 	return nil, errors.Errorf(404, "not found")
+}
+
+func (R *Router) Scheme(ctx micro.Context) micro.IScheme {
+	for _, item := range R.scheme.Items {
+		if item.GetScheme != nil {
+			item.Scheme = item.GetScheme(ctx)
+		}
+	}
+	return R.scheme
 }
