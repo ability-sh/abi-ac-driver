@@ -83,11 +83,17 @@ func Run(executor micro.Executor) error {
 	alias_n := len(alias)
 
 	s_state := alias + "__stat"
+	s_scheme := alias + "__scheme"
 
 	http.HandleFunc(alias, func(w http.ResponseWriter, r *http.Request) {
 
 		if r.URL.Path == s_state {
 			setDataResponse(w, map[string]interface{}{"appid": AC_APPID, "ver": AC_VER, "ability": AC_ABILITY, "env": AC_ENV})
+			return
+		}
+
+		if r.URL.Path == s_scheme {
+			setDataResponse(w, executor.Scheme())
 			return
 		}
 
