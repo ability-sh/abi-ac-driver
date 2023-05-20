@@ -1,6 +1,7 @@
 package httpd
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/ability-sh/abi-lib/dynamic"
 	"github.com/ability-sh/abi-lib/errors"
 	"github.com/ability-sh/abi-lib/json"
+	"github.com/ability-sh/abi-micro/aws"
 	"github.com/ability-sh/abi-micro/micro"
 	"github.com/ability-sh/abi-micro/runtime"
 )
@@ -28,6 +30,7 @@ func Run(executor micro.Executor) error {
 	AC_ADDR := os.Getenv("AC_ADDR")
 	AC_LOG_FILE := os.Getenv("AC_LOG_FILE")
 	AC_HTTP_BODY_SIZE, _ := strconv.ParseInt(os.Getenv("AC_HTTP_BODY_SIZE"), 10, 64)
+	AC_CONFIG_TYPE := os.Getenv("AC_CONFIG_TYPE")
 
 	if AC_HTTP_BODY_SIZE == 0 {
 		AC_HTTP_BODY_SIZE = 1024 * 1024 * 500
@@ -45,24 +48,35 @@ func Run(executor micro.Executor) error {
 		os.Stderr = fd
 	}
 
+	p := runtime.NewPayload()
+
+	defer p.Exit()
+
 	var config interface{} = nil
 	var err error = nil
 
-	config, err = driver.GetConfig("./config.yaml")
+	if AC_CONFIG_TYPE == "aws" {
 
-	if err != nil {
-		return err
+		config, err = aws.SetAppConfig(context.Background(), p)
+
+		if err != nil {
+			return err
+		}
+
+	} else {
+
+		config, err = driver.GetConfig("./config.yaml")
+
+		if err != nil {
+			return err
+		}
+
+		err = p.SetConfig(config)
+
+		if err != nil {
+			return err
+		}
 	}
-
-	p := runtime.NewPayload()
-
-	err = p.SetConfig(config)
-
-	if err != nil {
-		return err
-	}
-
-	defer p.Exit()
 
 	info, _ := driver.GetAppInfo()
 
