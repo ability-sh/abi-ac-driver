@@ -285,10 +285,10 @@ func setErrorResponse(w http.ResponseWriter, err error) {
 	{
 		he, ok := err.(*micro.HttpContent)
 		if ok {
-			w.WriteHeader(he.Code)
 			for k, v := range he.Headers {
 				w.Header().Set(k, v)
 			}
+			w.WriteHeader(he.Code)
 			w.Write(he.Body)
 			return
 		}
