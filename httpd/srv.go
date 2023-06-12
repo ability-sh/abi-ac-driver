@@ -278,6 +278,19 @@ func Run(executor micro.Executor) error {
 }
 
 func setErrorResponse(w http.ResponseWriter, err error) {
+
+	{
+		he, ok := err.(*micro.HttpContent)
+		if ok {
+			w.WriteHeader(he.Code)
+			for k, v := range he.Headers {
+				w.Header().Set(k, v)
+			}
+			w.Write(he.Body)
+			return
+		}
+	}
+
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	e, ok := err.(*errors.Error)
 	if ok {
