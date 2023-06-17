@@ -18,6 +18,11 @@ type RouteSchemeItem struct {
 	GetScheme func(micro.Context) micro.IScheme `json:"-"`
 }
 
+type routeInterceptorItem struct {
+	Match       func(name string) (string, bool)
+	Interceptor func(ctx micro.Context, name string, data interface{}) error
+}
+
 type RouteScheme struct {
 	Items []*RouteSchemeItem `json:"items"`
 }
@@ -28,8 +33,9 @@ type routerItem struct {
 }
 
 type Router struct {
-	items  []*routerItem
-	scheme *RouteScheme
+	items        []*routerItem
+	interceptors []*routeInterceptorItem
+	scheme       *RouteScheme
 }
 
 func NewRouter() *Router {
@@ -122,6 +128,17 @@ func (R *Router) Service(alias string, serviceName string) *Router {
 }
 
 func (R *Router) Exec(ctx micro.Context, name string, data interface{}) (interface{}, error) {
+
+	for _, item := range R.interceptors {
+		dst, ok := item.Match(name)
+		if ok {
+			err := item.Interceptor(ctx, dst, data)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	for _, item := range R.items {
 		dst, ok := item.Match(name)
 		if ok {
@@ -138,4 +155,14 @@ func (R *Router) Scheme(ctx micro.Context) micro.IScheme {
 		}
 	}
 	return R.scheme
+}
+
+func (R *Router) Interceptor(pattern *regexp.Regexp, interceptor func(ctx micro.Context, name string, data interface{}) error) *Router {
+	R.interceptors = append(R.interceptors, &routeInterceptorItem{Match: func(name string) (string, bool) {
+		if pattern.MatchString(name) {
+			return name, true
+		}
+		return "", false
+	}, Interceptor: interceptor})
+	return R
 }
