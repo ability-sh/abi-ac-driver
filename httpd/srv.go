@@ -1,6 +1,7 @@
 package httpd
 
 import (
+	"compress/gzip"
 	"context"
 	"io/ioutil"
 	"log"
@@ -19,6 +20,8 @@ import (
 	"github.com/ability-sh/abi-micro/micro"
 	"github.com/ability-sh/abi-micro/runtime"
 )
+
+var AC_HTTP_GZIP_ENABLED = os.Getenv("AC_HTTP_GZIP_ENABLED") == "true"
 
 func Run(executor micro.Executor) error {
 
@@ -102,7 +105,7 @@ func Run(executor micro.Executor) error {
 	http.HandleFunc(alias, func(w http.ResponseWriter, r *http.Request) {
 
 		if r.URL.Path == s_state {
-			setDataResponse(w, map[string]interface{}{"appid": AC_APPID, "ver": AC_VER, "ability": AC_ABILITY, "env": AC_ENV})
+			setDataResponse(r, w, map[string]interface{}{"appid": AC_APPID, "ver": AC_VER, "ability": AC_ABILITY, "env": AC_ENV})
 			return
 		}
 
@@ -302,10 +305,17 @@ func setErrorResponse(w http.ResponseWriter, err error) {
 	}
 }
 
-func setDataResponse(w http.ResponseWriter, data interface{}) {
+func setDataResponse(req *http.Request, w http.ResponseWriter, data interface{}) {
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	b, _ := json.Marshal(map[string]interface{}{"errno": 200, "data": data})
-	w.Write(b)
+	if AC_HTTP_GZIP_ENABLED && len(b) > 2048 && strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") {
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		gz.Write(b)
+	} else {
+		w.Write(b)
+	}
 }
 
 var clientKeys = []string{"X-Forwarded-For", "x-forwarded-for"}
