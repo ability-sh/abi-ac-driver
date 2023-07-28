@@ -131,7 +131,7 @@ func Run(executor micro.Executor) error {
 
 			defer ctx.Recycle()
 
-			setDataResponse(w, executor.Scheme(ctx))
+			setDataResponse(r, w, executor.Scheme(ctx))
 
 			return
 		}
@@ -262,7 +262,7 @@ func Run(executor micro.Executor) error {
 				return
 			}
 
-			setDataResponse(w, rs)
+			setDataResponse(r, w, rs)
 
 			return
 		}
